@@ -39,7 +39,7 @@ app.get('/takes', (req, res) => {
         .catch(err => console.error(err)); //error handling 
 })
 
-const FBAuth = (req, res, next) => { //middleware; allows us to check for authentication before proceeding in other methods
+const FBAuth = (req, res, next) =>{ //middleware; allows us to check for authentication before proceeding in other methods
     let idToken;
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')){ //checks if token exists
         idToken = req.headers.authorization.split('Bearer ')[1];
@@ -53,7 +53,7 @@ const FBAuth = (req, res, next) => { //middleware; allows us to check for authen
             req.user = decodedToken;
             console.log(decodedToken);
             return db.collection('users')
-                .where('userId', '==', req.user.uid )
+                .where('userID', '==', req.user.uid )
                 .limit(1)
                 .get();
         })
