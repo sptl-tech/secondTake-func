@@ -96,8 +96,8 @@ exports.login =(req, res) =>{
         })
 }
 //uploading a profile image for user
-exports.uploadImage = (req,res) =>{
-    const BusBoy = require("busboy");
+exports.uploadImage = (req,res) => {
+    const BusBoy = require('busboy');
     const path = require("path");
     const os = require("os");
     const fs = require("fs");
@@ -107,12 +107,12 @@ exports.uploadImage = (req,res) =>{
     let imageFileName;
     let imageUploaded ={};
 
-    busboy.on('file', (fieldname, file, filename, encoding, mimetype) =>{
+    busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
         console.log(fieldname);
         console.log(filename);
         console.log(mimetype);
         const imageExtension = filename.split(".")[filename.split(".").length -1]; //want to only have image extention from file name (confusion can occue when name is my.images.png for example)
-        imageFileName = `${Math.round(Math.random() * 100000000000).toString()}.${imageExtension}`;
+        imageFileName = `${Math.round(Math.random() * 100000000000)}.${imageExtension}`;
 
         const filepath = path.join(os.tmpdir(), imageFileName);
 
@@ -124,25 +124,26 @@ exports.uploadImage = (req,res) =>{
         admin
             .storage()
             .bucket(`${config.storageBucket}`)
-            .upload(uploadImage, filepath, {
+            .upload(uploadImage.filepath, {
                 resumable: false, 
                 metadata: {
                     metadata: {
                         contentType: uploadImage.mimetype
                     }
                 }
-            .then(() =>{ //image url
-                const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`;
-                //add imageurl to user's doc in database
-                return db.doc(`/users/${req.user.handle}`).update({imageUrl});
-            })
-            .then(() =>{
-                return res.json({message: 'Image uploaded successfully'});
-            })
-            .catch(err =>{
-                console.error(err);
-                return res.status(500).json({error: err.code});
-            })
+            
+        })
+        .then(() =>{ //image url
+            const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`;
+            //add imageurl to user's doc in database
+            return db.doc(`/users/${req.user.handle}`).update({ imageUrl });
+        })
+        .then(() =>{
+            return res.json({message: 'Image uploaded successfully'});
+        })
+        .catch(err =>{
+            console.error(err);
+            return res.status(500).json({error: err.code});
         })
     })
     busboy.end(req.rawBody);
