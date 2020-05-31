@@ -4,8 +4,8 @@ const config = require('../util/config');
 const firebase = require('firebase');
 firebase.initializeApp(config);
 
-const { validateSignUpData, validateLoginData} = require('../util/validators');
-
+const { validateSignUpData, validateLoginData, reduceUserDetails} = require('../util/validators');
+//signing up user
 exports.signup = (req, res) => { //signup route
     const newUser = {
         email: req.body.email,
@@ -65,7 +65,7 @@ exports.signup = (req, res) => { //signup route
         });
 }
 
-
+//loggin in user 
 exports.login =(req, res) =>{
     const user ={ //takes in email and password from user
         email: req.body.email,
@@ -95,28 +95,69 @@ exports.login =(req, res) =>{
             else return res.status(500).json({error : err.code});
         })
 }
+
+//Adding user details 
+exports.addUserDetails = (req, res) => {
+    let userDetails = reduceUserDetails(req.body);
+
+    db.doc(`/users/${req.user.handle}`).update(userDetails)
+        .then(() => {
+            return res.json({ message: 'Details added successfully' });
+        })
+        .catch(err => {
+            console.error(err);
+            return res.status(500).json({error: err.code});
+        })
+}
+
+//get own user details 
+exports.getAuthenticatedUser = (req, res) =>{
+    let userData ={}; //response data
+    db.doc(`/users/${req.user.handle}`).get()
+        .then(doc => {
+            if (doc.exists){
+                userData.credentials = doc.data();
+                return db.collection('likes').where('userHandle', '==', req.user.handle).get();
+            }
+        })
+        .then(data =>{
+            userData.likes =[];
+            data.forEach(doc => {
+                    userData.likes.push(doc.data());
+                });
+                return res.json(userData)
+            })
+            .catch(err => {
+                console.error(err);
+                return res.status(500).json({error: err.code});
+            })
+        
+}
+
+
 //uploading a profile image for user
 exports.uploadImage = (req,res) => {
-    const BusBoy = require('busboy');
+    const BusBoy = require("busboy");
     const path = require("path");
     const os = require("os");
     const fs = require("fs");
 
     const busboy = new BusBoy({ headers: req.headers });
 
-    let imageFileName;
     let imageUploaded ={};
+    let imageFileName;
 
     busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
-        console.log(fieldname);
-        console.log(filename);
-        console.log(mimetype);
+        if (mimetype !== 'image/jpeg' && mimetype !== 'image/png'){ //handles cases when user does not upload an image file
+            return res.status(400).json({ error: 'Wrong file type submitted' });
+        }
+
         const imageExtension = filename.split(".")[filename.split(".").length -1]; //want to only have image extention from file name (confusion can occue when name is my.images.png for example)
-        imageFileName = `${Math.round(Math.random() * 100000000000)}.${imageExtension}`;
+        imageFileName = `${Math.round(Math.random()*100000000000)}.${imageExtension}`;
 
         const filepath = path.join(os.tmpdir(), imageFileName);
 
-        imageUploaded = {filepath, mimetype};
+        imageUploaded = { filepath, mimetype };
         file.pipe(fs.createWriteStream(filepath));
     });
 
@@ -124,14 +165,13 @@ exports.uploadImage = (req,res) => {
         admin
             .storage()
             .bucket(`${config.storageBucket}`)
-            .upload(uploadImage.filepath, {
+            .upload(imageUploaded.filepath, {
                 resumable: false, 
                 metadata: {
                     metadata: {
-                        contentType: uploadImage.mimetype
-                    }
-                }
-            
+                        contentType: imageUploaded.mimetype
+                    },
+                },   
         })
         .then(() =>{ //image url
             const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`;
@@ -148,3 +188,4 @@ exports.uploadImage = (req,res) => {
     })
     busboy.end(req.rawBody);
 };
+

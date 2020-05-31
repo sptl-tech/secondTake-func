@@ -44,3 +44,19 @@ exports.validateLoginData = (data) =>{
         valid: Object.keys(errors).length === 0 ? true : false
     }
 }
+
+exports.reduceUserDetails = (data) =>{
+    let userDetails ={};
+
+    if (!isEmpty(data.bio.trim())) userDetails.bio = data.bio; //bio property
+    if(!isEmpty(data.website.trim())){
+        //want to check if website given is in correct format, otherwise we format it ourselves so link will work
+        if(data.website.trim().substring(0, 4) !== 'http'){ //website has not entered https
+            userDetails.website = `http://${data.website.trim()}`; //add it to given website
+        }
+        else userDetails.website = data.website;
+    }
+    if (!isEmpty(data.location.trim())) userDetails.location = data.location; //location property
+
+    return userDetails;
+}
