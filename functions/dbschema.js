@@ -22,6 +22,14 @@ let db = {
             likeCount: 6, //how many likes a take has
             commentCount: 2 //how many comment a take has
         }
+    ],
+    comments: [
+      {
+        userHandle: 'user',
+        takeId: 'kdjsfgdksuufhgkdsufky',
+        body: 'nice one mate!',
+        createdAt: '2019-03-15T10:59:52.798Z'
+      }
     ]
 };
 const userDetails = {
@@ -39,11 +47,11 @@ const userDetails = {
     likes: [
       {
         userHandle: 'user',
-        screamId: 'hh7O5oWfWucVzGbHH2pa'
+        takeId: 'hh7O5oWfWucVzGbHH2pa'
       },
       {
         userHandle: 'user',
-        screamId: '3IOnFoQexRcofs5OhBXO'
+        takeId: '3IOnFoQexRcofs5OhBXO'
       }
     ]
   };

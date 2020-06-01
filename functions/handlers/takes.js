@@ -9,7 +9,7 @@ exports.getAllTakes = (req, res) => { //retreving takes
             let takes = [];
             data.forEach((doc) => { //adds data to the empty string of takes depending on inputted data
                 takes.push({
-                    takeID: doc.id,
+                    takeId: doc.id,
                     body: doc.data().body,
                     userHandle: doc.data().userHandle,
                     createdAt: doc.data().createdAt
@@ -45,4 +45,56 @@ exports.postOneTake = (req, res) => { //posting a new take
             console.error(err); //error handling 
         })
 
+}
+//get one take 
+exports.getTake = (req, res) =>{
+    let takeData = {};
+    db.doc(`/takes/${req.params.takeId}`).get()
+        .then(doc =>{
+            if(!doc.exists){
+                return res.status(404).json({error: 'Take not found'})
+            }
+            takeData = doc.data(); //adds document data to the empty obj
+            takeData.takeId = doc.id;
+            return db.collection('comments').orderBy('createdAt', 'desc').where('takeId', '==', req.params.takeId).get();
+                
+        })
+        .then(data =>{
+            takeData.comments = [];
+            data.forEach(doc =>{ //pushes comment data onto the array 
+                takeData.comments.push(doc.data())
+            })
+            return res.json(takeData);
+        })
+        .catch (err =>{
+            console.error(err);
+            res.status(500).json({error: err.code});
+        })
+}
+//Comment on a take
+exports.commentOnTake = (req, res) =>{
+    if(req.body.body.trim() === '') return res.status(400).json({error: 'Cannot Be Empty'});
+
+    const newComment = {
+        body: req.body.body,
+        createdAt: new Date().toISOString(),
+        takeId: req.params.takeId,
+        userHandle: req.user.handle,
+        userImage: req.user.imageUrl
+    };
+
+    db.doc(`/takes/${req.params.takeId}`).get()
+        .then(doc =>{
+            if(!doc.exists){ //in case take gets deleted/not avaliable
+                return res.status(404).json({error: 'Take not found'})
+            }
+            return db.collection('comments').add(newComment);
+        })
+        .then(() =>{
+            res.json(newComment);
+        })
+        .catch(err =>{
+            console.log(err);
+            res.status(500).json({error: 'Something Went Wrong'});
+        })
 }
