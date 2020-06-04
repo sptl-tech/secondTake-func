@@ -19,7 +19,7 @@ exports.signup = (req, res) => { //signup route
 
     if(!valid) return res.status(400).json(errors);
     
-    const defImg = 'defPP.jpeg'
+    const defImg = 'defPP.jpeg' //user gets a default blank image for thier profile picture initially, can change it later
 
     //TODO validate data 
     let token, userId
@@ -39,7 +39,7 @@ exports.signup = (req, res) => { //signup route
             return data.user.getIdToken();
 
         })
-        .then(idtoken =>{
+        .then(idtoken =>{ //def user account
             token = idtoken;
             const userCredentials ={ //creates a new user document
                 handle: newUser.handle,
@@ -60,7 +60,7 @@ exports.signup = (req, res) => { //signup route
                 return res.status(400).json({email: 'Email is already in use'})
             }
             else{
-                return res.status(500).json({error: err.code})
+                return res.status(500).json({general: 'Something Went Wrong, Please Try Again'})
             }
         });
 }
@@ -86,13 +86,8 @@ exports.login =(req, res) =>{
         })
         .catch((err) =>{
             console.error(err);
-            if(err.code === 'auth/wrong-password'){
-                return res.status(403).json({general: 'Wrong credentials, please try again'});
-            }
-            if (err.code === 'auth/invalid-email'){
-                return res.status(403).json({general: "Invalid email, please try again"});
-            }
-            else return res.status(500).json({error : err.code});
+            return res.status(403).json({general: 'Wrong Credentials, Please Try Again'})
+            
         })
 }
 

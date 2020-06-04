@@ -81,3 +81,51 @@ exports.createNotificationOnComment = functions.firestore.document('/comments/{i
                 return;
             })
     })
+
+//db trigger for when user changes their profile picture => all thier images on thier takes get updated
+exports.onUserImageChange = functions.firestore.document('/users/{userId}')
+    .onUpdate((change) =>{
+        console.log(change.before.data());
+        console.log(change.after.data());
+        if (change.before.data().imageUrl !== change.after.data().imageUrl){ //only executes if user changest thier image
+            console.log('Image has changed')
+            const batch = db.batch();
+            return db.collection('takes').where('userHandle', '==', change.before.data().handle).get()
+                .then((data) =>{
+                    data.forEach(doc =>{ //goes through user's takes and updates the image using new imageUrl
+                        const take = db.doc(`/takes/${doc.id}`)
+                        batch.update(take, {userImage: change.after.data().imageUrl})
+                    })
+                    return batch.commit();
+            })
+        } else return true;
+    });
+
+//db trigger for when user deletes thier takes => all likes, comments, and notifications are deleted as well
+exports.onTakeDelete = functions.firestore.document('/takes/{takeId}')
+    .onDelete((snapshot, context) =>{ //context contains paramets from URL
+        const takeId = context.params.takeId;
+        const batch = db.batch();
+
+        return db.collection('comments').where('takeId', '==', takeId).get() //to remove comments from deleted take
+            .then(data =>{
+                data.forEach(doc =>{
+                    batch.delete(db.doc(`/comments/${doc.id}`));
+                })
+                return db.collection('likes').where(('takeId', '==', takeId)).get();
+            })
+            .then(data =>{
+                data.forEach(doc =>{
+                    batch.delete(db.doc(`/likes/${doc.id}`)); //deleting likes from deleted takes
+                })
+                return db.collection('notifications').where(('takeId', '==', takeId)).get();
+            })
+            .then(data =>{
+                data.forEach(doc =>{
+                    batch.delete(db.doc(`/notifications/${doc.id}`)); //deleting notifications from deleted takes
+                })
+                return batch.commit();
+            })
+            .catch((err) => console.error(err));
+            
+    })
